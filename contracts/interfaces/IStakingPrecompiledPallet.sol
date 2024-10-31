@@ -5,7 +5,7 @@
  * It is also responsible to get the subnet alpha and subnet TAO for a given netuid
  * It is also responsible to get the total hotkey alpha for a given hotkey and netuid
  */
-pragma solidity ^0.8.0;
+pragma solidity 0.8.20;
 
 /// @title IStaking Interface
 /// @notice Interface for the Staking Pallet, responsible for managing stake delegation and subnet parameters
