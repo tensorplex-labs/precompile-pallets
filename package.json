@@ -1,6 +1,6 @@
 {
-  "name": "hardhat-project",
-  "version": "0.0.2",
+  "name": "@tensorplex/precompile-pallets",
+  "version": "0.0.3",
   "files": [
     "/contracts/**/*.sol"
   ],
