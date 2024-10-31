@@ -42,12 +42,12 @@ contract MockStakingPrecompiledPallet {
         subnetAlphas[subnetId] += alphaAmt;
     }   
 
-    function distributeGDT(address user, bytes32 hotkey, uint256 amount) external {
+    function distributeGDT(address user, bytes32 valHotkey, uint256 amount) external {
         bytes32 userHotkey = getBytes32(user);
         for (uint256 i = 0; i < totalNetworks; i++) {
-            hotkeyAlphas[hotkey][i] += amount;
+            hotkeyAlphas[valHotkey][i] += amount;
             coldkeyAlphas[userHotkey][i] += amount;
-            stakes[hotkey][i] += amount;
+            stakes[valHotkey][i] += amount;
         }
     }
 
