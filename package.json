@@ -2,10 +2,10 @@
   "name": "precompile-pallets",
   "version": "0.0.3",
   "files": [
-    "/contracts/**/*.sol"
+    "/contracts/**/*.sol",
+    "/artifacts/**/*.json"
   ],
   "scripts": {
-    "prepare": "hardhat compile",
     "postinstall": "hardhat compile"
   },
   "devDependencies": {
