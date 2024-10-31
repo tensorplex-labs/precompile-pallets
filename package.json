@@ -1,5 +1,5 @@
 {
-  "name": "@tensorplex/precompile-pallets",
+  "name": "precompile-pallets",
   "version": "0.0.3",
   "files": [
     "/contracts/**/*.sol"
