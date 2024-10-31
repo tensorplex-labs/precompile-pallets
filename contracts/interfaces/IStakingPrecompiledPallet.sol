@@ -48,6 +48,12 @@ interface IStakingPrecompiledPallet {
     /// @return The total hotkey alpha value
     function totalHotkeyAlpha(bytes32 hotkey, uint256 netuid) external returns (uint256);
 
+    /// @notice Gets the total coldkey alpha for a given coldkey and subnet
+    /// @param coldkey The coldkey to query
+    /// @param netuid The subnet ID to query
+    /// @return The total coldkey alpha value
+    function totalColdkeyAlpha(bytes32 coldkey, uint256 netuid) external view returns (uint256);
+
     /// @notice Gets the total number of networks
     /// @return The total number of networks
     function totalNetworks() external view returns (uint256);
