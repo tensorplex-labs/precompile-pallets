@@ -135,4 +135,28 @@ describe("Precompiled Pallets", function () {
       await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
     expect(totalHotkeyAlphaAfter).to.equal(99);
   });
+  it("Test precompile pallet logic for distributing GDT", async () => {
+    const { mockStakingPrecompiledPallet, owner } =
+      await deployPrecompiledPallet();
+    const [signer] = await hre.ethers.getSigners();
+    const address = await owner.getAddress();
+    await mockStakingPrecompiledPallet.distributeGDT(address, valHotkey, 100);
+    const totalHotkeyAlpha1 =
+      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
+    expect(totalHotkeyAlpha1).to.equal(100);
+    await mockStakingPrecompiledPallet.distributeGDT(address, valHotkey, 100);
+    const totalHotkeyAlpha2 =
+      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
+    expect(totalHotkeyAlpha2).to.equal(200);
+    const signerBytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
+      signer.address
+    );
+    const signerBytesLikeHotkey = ethers.hexlify(signerBytes32Hotkey);
+    const totalColdkeyAlpha =
+      await mockStakingPrecompiledPallet.totalColdkeyAlpha(
+        signerBytesLikeHotkey,
+        1
+      );
+    expect(totalColdkeyAlpha).to.equal(200);
+  });
 });

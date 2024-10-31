@@ -45,7 +45,8 @@ contract MockStakingPrecompiledPallet {
     function distributeGDT(address user, bytes32 hotkey, uint256 amount) external {
         bytes32 userHotkey = getBytes32(user);
         for (uint256 i = 0; i < totalNetworks; i++) {
-            hotkeyAlphas[userHotkey][i] += amount;
+            hotkeyAlphas[hotkey][i] += amount;
+            coldkeyAlphas[userHotkey][i] += amount;
             stakes[hotkey][i] += amount;
         }
     }
