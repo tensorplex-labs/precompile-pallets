@@ -1,5 +1,8 @@
 {
   "name": "hardhat-project",
+  "files": [
+    "/contracts/**/*.sol"
+  ],
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
