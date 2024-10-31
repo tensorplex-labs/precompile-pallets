@@ -4,6 +4,9 @@
   "files": [
     "/contracts/**/*.sol"
   ],
+  "scripts": {
+    "prepare": "hardhat compile"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
