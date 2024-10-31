@@ -86,6 +86,17 @@ contract MockStakingPrecompiledPallet {
 
     }
 
+    function moveStake(bytes32 src_hotkey, uint256 src_netuid, bytes32 dst_hotkey, uint256 dst_netuid, uint256 amount) external {
+        require(amount > 0, "Amount must be greater than 0");
+        require(stakes[src_hotkey][src_netuid] >= amount, "Insufficient stake");
+        stakes[src_hotkey][src_netuid] -= amount;
+        hotkeyAlphas[src_hotkey][src_netuid] -= amount;
+        coldkeyAlphas[getBytes32(msg.sender)][src_netuid] -= amount;
+        stakes[dst_hotkey][dst_netuid] += amount;
+        hotkeyAlphas[dst_hotkey][dst_netuid] += amount;
+        coldkeyAlphas[getBytes32(msg.sender)][dst_netuid] += amount;
+    }
+
     function subnetAlphaIn(uint256 netuid) external view returns (uint256) {
         return subnetAlphas[netuid];
     }

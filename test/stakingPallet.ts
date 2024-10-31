@@ -61,6 +61,35 @@ describe("Precompiled Pallets", function () {
       expect(totalHotkeyAlphaAfter).to.equal(0);
     });
   });
+  it("Should be able to move stake from one subnet to another subnet", async function () {
+    const [signer, otherAccount] = await hre.ethers.getSigners();
+    const { mockStakingPrecompiledPallet, owner } =
+      await deployPrecompiledPallet();
+    const signerBytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
+      signer.address
+    );
+    const signerBytesLikeHotkey = ethers.hexlify(signerBytes32Hotkey);
+    // Now we try to add 100 TAO stake
+    await mockStakingPrecompiledPallet.connect(signer).addStake(valHotkey, 1, {
+      value: 100,
+    });
+    // Afterwards, we try to move the stake to another subnet
+    await mockStakingPrecompiledPallet
+      .connect(signer)
+      .moveStake(valHotkey, 1, valHotkey, 2, 99);
+    // Now we check the total stake of the signer
+    const totalStake = await mockStakingPrecompiledPallet.totalColdkeyAlpha(
+      signerBytesLikeHotkey,
+      1
+    );
+    expect(totalStake).to.equal(0);
+    // Expect the stake to be moved
+    const totalStake2 = await mockStakingPrecompiledPallet.totalColdkeyAlpha(
+      signerBytesLikeHotkey,
+      2
+    );
+    expect(totalStake2).to.equal(99);
+  });
   it("Should add multiple stake from two different addresses", async function () {
     const [signer, otherAccount] = await hre.ethers.getSigners();
     const { mockStakingPrecompiledPallet, owner } =
