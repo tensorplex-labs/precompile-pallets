@@ -28,7 +28,9 @@ contract MockStakingPrecompiledPallet {
 
     function addUserStake(address user, bytes32 hotkey, uint256 netuid, uint256 amount) external {
         stakes[hotkey][netuid] += amount;
-        hotkeyAlphas[bytes32(uint256(uint160(user)))][netuid] += amount;
+        hotkeyAlphas[hotkey][netuid] += amount;
+        coldkeyAlphas[bytes32(uint256(uint160(user)))][netuid] += amount;
+
         subnetAlphas[netuid] += amount;
         subnetTAOs[netuid] += amount;
     }
