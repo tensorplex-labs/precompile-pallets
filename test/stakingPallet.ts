@@ -46,7 +46,7 @@ describe("Precompiled Pallets", function () {
         await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
       expect(totalHotkeyAlpha).to.equal(100);
 
-      await mockStakingPrecompiledPallet.removeStake(valHotkey, 1, 100);
+      await mockStakingPrecompiledPallet.removeStake(valHotkey, 100);
       const totalColdkeyAlphaAfter =
         await mockStakingPrecompiledPallet.totalColdkeyAlpha(bytesLikeHotkey);
       expect(totalColdkeyAlphaAfter).to.equal(0);
@@ -54,6 +54,39 @@ describe("Precompiled Pallets", function () {
         await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
       expect(totalHotkeyAlphaAfter).to.equal(0);
     });
+  });
+  it("Test Add User Stake", async function () {
+    const { mockStakingPrecompiledPallet, owner } =
+      await deployPrecompiledPallet();
+    const address = await owner.getAddress();
+
+    await mockStakingPrecompiledPallet.addUserStake(
+      address,
+      valHotkey,
+      1,
+      100,
+      {
+        value: 100,
+      }
+    );
+    const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
+      address
+    );
+    const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
+    const totalColdkeyAlpha =
+      await mockStakingPrecompiledPallet.totalColdkeyAlpha(bytesLikeHotkey);
+    expect(totalColdkeyAlpha).to.equal(100);
+    const totalHotkeyAlpha =
+      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
+    expect(totalHotkeyAlpha).to.equal(100);
+
+    await mockStakingPrecompiledPallet.removeStake(valHotkey, 100);
+    const totalColdkeyAlphaAfter =
+      await mockStakingPrecompiledPallet.totalColdkeyAlpha(bytesLikeHotkey);
+    expect(totalColdkeyAlphaAfter).to.equal(0);
+    const totalHotkeyAlphaAfter =
+      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
+    expect(totalHotkeyAlphaAfter).to.equal(0);
   });
   it("Should add multiple stake from two different addresses", async function () {
     const [signer, otherAccount] = await hre.ethers.getSigners();
@@ -93,7 +126,7 @@ describe("Precompiled Pallets", function () {
     // Now we try to unstake from the signer address
     await mockStakingPrecompiledPallet
       .connect(signer)
-      .removeStake(valHotkey, 1, 100);
+      .removeStake(valHotkey, 100);
     const totalHotkeyAlphaAfter =
       await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
     expect(totalHotkeyAlphaAfter).to.equal(100);
