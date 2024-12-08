@@ -19,7 +19,7 @@ contract MockStakingPrecompiledPallet {
         // This function allows the contract to receive ETH
     }
 
-    function addUserStake(address user, bytes32 hotkey, uint256 netuid, uint256 amount) external {
+    function addUserStake(address user, bytes32 hotkey, uint256 netuid, uint256 amount) external payable {
         stakes[hotkey] += amount;
         hotkeyAlphas[hotkey] += amount;
         coldkeyAlphas[bytes32(uint256(uint160(user)))] += amount;
