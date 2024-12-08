@@ -32,7 +32,7 @@ describe("Precompiled Pallets", function () {
 
       const address = await owner.getAddress();
 
-      await mockStakingPrecompiledPallet.addStake(valHotkey, 1, {
+      await mockStakingPrecompiledPallet.addStake(valHotkey, {
         value: 100,
       });
       const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
@@ -40,62 +40,27 @@ describe("Precompiled Pallets", function () {
       );
       const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
       const totalColdkeyAlpha =
-        await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-          bytesLikeHotkey,
-          1
-        );
-      expect(totalColdkeyAlpha).to.equal(99);
+        await mockStakingPrecompiledPallet.totalColdkeyAlpha(bytesLikeHotkey);
+      expect(totalColdkeyAlpha).to.equal(100);
       const totalHotkeyAlpha =
-        await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-      expect(totalHotkeyAlpha).to.equal(99);
+        await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
+      expect(totalHotkeyAlpha).to.equal(100);
 
-      await mockStakingPrecompiledPallet.removeStake(valHotkey, 1, 99);
+      await mockStakingPrecompiledPallet.removeStake(valHotkey, 1, 100);
       const totalColdkeyAlphaAfter =
-        await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-          bytesLikeHotkey,
-          1
-        );
+        await mockStakingPrecompiledPallet.totalColdkeyAlpha(bytesLikeHotkey);
       expect(totalColdkeyAlphaAfter).to.equal(0);
       const totalHotkeyAlphaAfter =
-        await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
+        await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
       expect(totalHotkeyAlphaAfter).to.equal(0);
     });
-  });
-  it("Should be able to move stake from one subnet to another subnet", async function () {
-    const [signer, otherAccount] = await hre.ethers.getSigners();
-    const { mockStakingPrecompiledPallet, owner } =
-      await deployPrecompiledPallet();
-    const signerBytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
-      signer.address
-    );
-    const signerBytesLikeHotkey = ethers.hexlify(signerBytes32Hotkey);
-    // Now we try to add 100 TAO stake
-    await mockStakingPrecompiledPallet.connect(signer).addStake(valHotkey, 1, {
-      value: 100,
-    });
-    // Afterwards, we try to move the stake to another subnet
-    await mockStakingPrecompiledPallet
-      .connect(signer)
-      .moveStake(valHotkey, 1, valHotkey, 2, 99);
-    // Now we check the total stake of the signer
-    const totalStake = await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-      signerBytesLikeHotkey,
-      1
-    );
-    expect(totalStake).to.equal(0);
-    // Expect the stake to be moved
-    const totalStake2 = await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-      signerBytesLikeHotkey,
-      2
-    );
-    expect(totalStake2).to.equal(99);
   });
   it("Should add multiple stake from two different addresses", async function () {
     const [signer, otherAccount] = await hre.ethers.getSigners();
     const { mockStakingPrecompiledPallet, owner } =
       await deployPrecompiledPallet();
 
-    await mockStakingPrecompiledPallet.connect(signer).addStake(valHotkey, 1, {
+    await mockStakingPrecompiledPallet.connect(signer).addStake(valHotkey, {
       value: 100,
     });
     const signerBytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
@@ -109,54 +74,28 @@ describe("Precompiled Pallets", function () {
     );
     await mockStakingPrecompiledPallet
       .connect(otherAccount)
-      .addStake(valHotkey, 1, {
+      .addStake(valHotkey, {
         value: 100,
       });
     const totalSignerColdkeyAlpha =
       await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-        signerBytesLikeHotkey,
-        1
+        signerBytesLikeHotkey
       );
     const totalOtherAccountColdkeyAlpha =
       await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-        otherAccountBytesLikeHotkey,
-        1
+        otherAccountBytesLikeHotkey
       );
     const totalHotkeyAlpha =
-      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-    expect(totalHotkeyAlpha).to.equal(198);
-    expect(totalSignerColdkeyAlpha).to.equal(99);
-    expect(totalOtherAccountColdkeyAlpha).to.equal(99);
+      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
+    expect(totalHotkeyAlpha).to.equal(200);
+    expect(totalSignerColdkeyAlpha).to.equal(100);
+    expect(totalOtherAccountColdkeyAlpha).to.equal(100);
     // Now we try to unstake from the signer address
     await mockStakingPrecompiledPallet
       .connect(signer)
-      .removeStake(valHotkey, 1, 99);
+      .removeStake(valHotkey, 1, 100);
     const totalHotkeyAlphaAfter =
-      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-    expect(totalHotkeyAlphaAfter).to.equal(99);
-  });
-  it("Test precompile pallet logic for distributing GDT", async () => {
-    const { mockStakingPrecompiledPallet, owner } =
-      await deployPrecompiledPallet();
-    const [signer] = await hre.ethers.getSigners();
-    const address = await owner.getAddress();
-    await mockStakingPrecompiledPallet.distributeGDT(address, valHotkey, 100);
-    const totalHotkeyAlpha1 =
-      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-    expect(totalHotkeyAlpha1).to.equal(100);
-    await mockStakingPrecompiledPallet.distributeGDT(address, valHotkey, 100);
-    const totalHotkeyAlpha2 =
-      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-    expect(totalHotkeyAlpha2).to.equal(200);
-    const signerBytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
-      signer.address
-    );
-    const signerBytesLikeHotkey = ethers.hexlify(signerBytes32Hotkey);
-    const totalColdkeyAlpha =
-      await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-        signerBytesLikeHotkey,
-        1
-      );
-    expect(totalColdkeyAlpha).to.equal(200);
+      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
+    expect(totalHotkeyAlphaAfter).to.equal(100);
   });
 });
