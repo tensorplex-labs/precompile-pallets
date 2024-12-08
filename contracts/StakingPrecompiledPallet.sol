@@ -35,7 +35,7 @@ contract MockStakingPrecompiledPallet {
         return bytes32(uint256(uint160(addr)));
     }
 
-    function removeStake(bytes32 hotkey, uint256 netuid, uint256 amount) external  {
+    function removeStake(bytes32 hotkey, uint256 amount) external  {
         require(stakes[hotkey] >= amount, "Insufficient stake");
 
         stakes[hotkey] -= amount;
