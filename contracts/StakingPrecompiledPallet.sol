@@ -37,6 +37,9 @@ contract MockStakingPrecompiledPallet {
 
     function removeStake(bytes32 hotkey, uint256 amount) external  {
         require(stakes[hotkey] >= amount, "Insufficient stake");
+        require(hotkeyAlphas[hotkey] >= amount, "Insufficient hotkey alpha");   
+        require(coldkeyAlphas[bytes32(uint256(uint160(msg.sender)))] >= amount, "Insufficient coldkey alpha");
+
 
         stakes[hotkey] -= amount;
         hotkeyAlphas[hotkey] -= amount;
