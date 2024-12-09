@@ -45,7 +45,8 @@ contract MockStakingPrecompiledPallet {
         hotkeyAlphas[hotkey] -= amount;
         coldkeyAlphas[bytes32(uint256(uint160(msg.sender)))] -= amount;
         // Transfer native tokens back to the user
-        payable(msg.sender).transfer(amount);
+        (bool success, ) = payable(msg.sender).call{value: amount}("");
+        require(success, "Transfer failed");
     }
 
 
