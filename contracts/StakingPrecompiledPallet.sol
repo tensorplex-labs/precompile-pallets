@@ -25,7 +25,8 @@ contract MockStakingPrecompiledPallet {
         coldkeyAlphas[bytes32(uint256(uint160(user)))] += amount;
     }
 
-    function addStake(bytes32 hotkey) external payable  {
+    // note that netuid is a noop until dtao launches
+    function addStake(bytes32 hotkey, uint16 netuid) external payable  {
         stakes[hotkey] += msg.value;
         hotkeyAlphas[hotkey] += msg.value;
         coldkeyAlphas[bytes32(uint256(uint160(msg.sender)))] += msg.value;
@@ -35,7 +36,8 @@ contract MockStakingPrecompiledPallet {
         return bytes32(uint256(uint160(addr)));
     }
 
-    function removeStake(bytes32 hotkey, uint256 amount) external  {
+    // note that netuid is a noop until dtao launches
+    function removeStake(bytes32 hotkey, uint256 amount, uint16 netuid) external  {
         require(stakes[hotkey] >= amount, "Insufficient stake");
         require(hotkeyAlphas[hotkey] >= amount, "Insufficient hotkey alpha");   
         require(coldkeyAlphas[bytes32(uint256(uint160(msg.sender)))] >= amount, "Insufficient coldkey alpha");
