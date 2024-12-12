@@ -123,6 +123,12 @@ describe("Precompiled Pallets", function () {
     expect(totalHotkeyAlpha).to.equal(200);
     expect(totalSignerColdkeyAlpha).to.equal(100);
     expect(totalOtherAccountColdkeyAlpha).to.equal(100);
+    const stake = await mockStakingPrecompiledPallet.getStake(
+      signerBytesLikeHotkey,
+      valHotkey,
+      1
+    );
+    expect(stake).to.equal(100);
     // Now we try to unstake from the signer address
     await mockStakingPrecompiledPallet
       .connect(signer)

@@ -7,7 +7,7 @@ import "./interfaces/IStakingPrecompiledPallet.sol";
 
 
 contract MockStakingPrecompiledPallet {
-    mapping(bytes32 => uint256) private stakes;
+    mapping(bytes32 => mapping(bytes32 => uint256)) private stakes;
     mapping(bytes32 => uint256) private hotkeyAlphas;
     mapping(bytes32 => uint256) private coldkeyAlphas;
     uint256 public totalNetworks = 10;
@@ -20,16 +20,18 @@ contract MockStakingPrecompiledPallet {
     }
 
     function addUserStake(address user, bytes32 hotkey, uint256 netuid, uint256 amount) external payable {
-        stakes[hotkey] += amount;
+        bytes32 coldkey = getBytes32(user);
+        stakes[coldkey][hotkey] += amount;
         hotkeyAlphas[hotkey] += amount;
-        coldkeyAlphas[bytes32(uint256(uint160(user)))] += amount;
+        coldkeyAlphas[coldkey] += amount;
     }
 
     // note that netuid is a noop until dtao launches
     function addStake(bytes32 hotkey, uint16 netuid) external payable  {
-        stakes[hotkey] += msg.value;
+        bytes32 coldkey = getBytes32(msg.sender);
+        stakes[coldkey][hotkey] += msg.value;
         hotkeyAlphas[hotkey] += msg.value;
-        coldkeyAlphas[bytes32(uint256(uint160(msg.sender)))] += msg.value;
+        coldkeyAlphas[coldkey] += msg.value;
     }
 
     function getBytes32(address addr) public view returns (bytes32) {
@@ -38,17 +40,22 @@ contract MockStakingPrecompiledPallet {
 
     // note that netuid is a noop until dtao launches
     function removeStake(bytes32 hotkey, uint256 amount, uint16 netuid) external  {
-        require(stakes[hotkey] >= amount, "Insufficient stake");
+        bytes32 coldkey = getBytes32(msg.sender);
+        require(stakes[coldkey][hotkey] >= amount, "Insufficient stake");
         require(hotkeyAlphas[hotkey] >= amount, "Insufficient hotkey alpha");   
-        require(coldkeyAlphas[bytes32(uint256(uint160(msg.sender)))] >= amount, "Insufficient coldkey alpha");
+        require(coldkeyAlphas[coldkey] >= amount, "Insufficient coldkey alpha");
 
 
-        stakes[hotkey] -= amount;
+        stakes[coldkey][hotkey] -= amount;
         hotkeyAlphas[hotkey] -= amount;
         coldkeyAlphas[bytes32(uint256(uint160(msg.sender)))] -= amount;
         // Transfer native tokens back to the user
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Transfer failed");
+    }
+
+    function getStake(bytes32 coldkey, bytes32 hotkey, uint16 netuid) external view returns (uint256) {
+        return stakes[coldkey][hotkey];
     }
 
 
