@@ -10,6 +10,7 @@ contract MockStakingPrecompiledPallet {
     mapping(bytes32 => mapping(bytes32 => uint256)) private stakes;
     mapping(bytes32 => uint256) private hotkeyAlphas;
     mapping(bytes32 => uint256) private coldkeyAlphas;
+    mapping(address => bytes32) private addressToSS58Mapping;
     uint256 public totalNetworks = 10;
 
     constructor() {}
@@ -19,8 +20,12 @@ contract MockStakingPrecompiledPallet {
         // This function allows the contract to receive ETH
     }
 
-    function addUserStake(address user, bytes32 hotkey, uint256 netuid, uint256 amount) external payable {
-        bytes32 coldkey = getBytes32(user);
+    function setMapping(address user, bytes32 hotkey) external {
+        addressToSS58Mapping[user] = hotkey;    
+    }
+
+    function addUserStake(bytes32 coldkey, bytes32 hotkey, uint256 netuid, uint256 amount) external payable {
+        // bytes32 coldkey = getBytes32(user);
         stakes[coldkey][hotkey] += amount;
         hotkeyAlphas[hotkey] += amount;
         coldkeyAlphas[coldkey] += amount;
@@ -28,7 +33,8 @@ contract MockStakingPrecompiledPallet {
 
     // note that netuid is a noop until dtao launches
     function addStake(bytes32 hotkey, uint16 netuid) external payable  {
-        bytes32 coldkey = getBytes32(msg.sender);
+        bytes32 coldkey = addressToSS58Mapping[msg.sender];
+        require(coldkey != bytes32(0), "No mapping found for address");
         stakes[coldkey][hotkey] += msg.value;
         hotkeyAlphas[hotkey] += msg.value;
         coldkeyAlphas[coldkey] += msg.value;
@@ -40,7 +46,8 @@ contract MockStakingPrecompiledPallet {
 
     // note that netuid is a noop until dtao launches
     function removeStake(bytes32 hotkey, uint256 amount, uint16 netuid) external  {
-        bytes32 coldkey = getBytes32(msg.sender);
+        bytes32 coldkey = addressToSS58Mapping[msg.sender];
+        require(coldkey != bytes32(0), "No mapping found for address");
         require(stakes[coldkey][hotkey] >= amount, "Insufficient stake");
         require(hotkeyAlphas[hotkey] >= amount, "Insufficient hotkey alpha");   
         require(coldkeyAlphas[coldkey] >= amount, "Insufficient coldkey alpha");
@@ -48,7 +55,7 @@ contract MockStakingPrecompiledPallet {
 
         stakes[coldkey][hotkey] -= amount;
         hotkeyAlphas[hotkey] -= amount;
-        coldkeyAlphas[bytes32(uint256(uint160(msg.sender)))] -= amount;
+        coldkeyAlphas[coldkey] -= amount;
         // Transfer native tokens back to the user
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Transfer failed");

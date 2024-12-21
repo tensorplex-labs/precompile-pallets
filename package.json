@@ -8,6 +8,11 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@polkadot/api": "12.4.1",
+    "@polkadot/keyring": "13.0.2",
+    "@polkadot/types": "^12.4.2",
+    "@polkadot/util": "13.0.2",
+    "@polkadot/util-crypto": "13.0.2",
     "hardhat": "^2.22.12",
     "solidity-coverage": "^0.8.13"
   },

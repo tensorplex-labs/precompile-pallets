@@ -1,6 +1,7 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { valHotkey } from "./helpers/constants";
+import { convertH160ToSS58, ss58ToBytes } from "./helpers/addressMapping";
 export async function deployPrecompiledPallet() {
   const [owner, otherAccount] = await hre.ethers.getSigners();
   const MockStakingPrecompiledPallet = await hre.ethers.getContractFactory(
@@ -32,15 +33,17 @@ describe("Precompiled Pallets", function () {
 
       const address = await owner.getAddress();
 
+      const ss58Address = ss58ToBytes(convertH160ToSS58(address));
+
+      await mockStakingPrecompiledPallet.setMapping(address, ss58Address);
+
       await mockStakingPrecompiledPallet.addStake(valHotkey, 1, {
         value: 100,
       });
-      const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
-        address
-      );
-      const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
+
+      const bytesLikeHotkey = ss58Address;
       const totalColdkeyAlpha =
-        await mockStakingPrecompiledPallet.totalColdkeyAlpha(bytesLikeHotkey);
+        await mockStakingPrecompiledPallet.totalColdkeyAlpha(ss58Address);
       expect(totalColdkeyAlpha).to.equal(100);
       const totalHotkeyAlpha =
         await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
@@ -48,7 +51,7 @@ describe("Precompiled Pallets", function () {
 
       await mockStakingPrecompiledPallet.removeStake(valHotkey, 100, 1);
       const totalColdkeyAlphaAfter =
-        await mockStakingPrecompiledPallet.totalColdkeyAlpha(bytesLikeHotkey);
+        await mockStakingPrecompiledPallet.totalColdkeyAlpha(ss58Address);
       expect(totalColdkeyAlphaAfter).to.equal(0);
       const totalHotkeyAlphaAfter =
         await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
@@ -59,9 +62,11 @@ describe("Precompiled Pallets", function () {
     const { mockStakingPrecompiledPallet, owner } =
       await deployPrecompiledPallet();
     const address = await owner.getAddress();
+    const ss58Address = ss58ToBytes(convertH160ToSS58(address));
+    await mockStakingPrecompiledPallet.setMapping(address, ss58Address);
 
     await mockStakingPrecompiledPallet.addUserStake(
-      address,
+      ss58Address,
       valHotkey,
       1,
       100,
@@ -69,10 +74,7 @@ describe("Precompiled Pallets", function () {
         value: 100,
       }
     );
-    const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
-      address
-    );
-    const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
+    const bytesLikeHotkey = ss58Address;
     const totalColdkeyAlpha =
       await mockStakingPrecompiledPallet.totalColdkeyAlpha(bytesLikeHotkey);
     expect(totalColdkeyAlpha).to.equal(100);
@@ -92,6 +94,15 @@ describe("Precompiled Pallets", function () {
     const [signer, otherAccount] = await hre.ethers.getSigners();
     const { mockStakingPrecompiledPallet, owner } =
       await deployPrecompiledPallet();
+    const ss58Address = ss58ToBytes(convertH160ToSS58(signer.address));
+    await mockStakingPrecompiledPallet.setMapping(signer.address, ss58Address);
+    const otherAccountSS58Address = ss58ToBytes(
+      convertH160ToSS58(otherAccount.address)
+    );
+    await mockStakingPrecompiledPallet.setMapping(
+      otherAccount.address,
+      otherAccountSS58Address
+    );
 
     await mockStakingPrecompiledPallet.connect(signer).addStake(valHotkey, 1, {
       value: 100,
@@ -102,21 +113,20 @@ describe("Precompiled Pallets", function () {
     const signerBytesLikeHotkey = ethers.hexlify(signerBytes32Hotkey);
     const otherAccountBytes32Hotkey =
       await mockStakingPrecompiledPallet.getBytes32(otherAccount.address);
-    const otherAccountBytesLikeHotkey = ethers.hexlify(
-      otherAccountBytes32Hotkey
+    const otherAccountBytesLikeHotkey = ss58ToBytes(
+      convertH160ToSS58(otherAccount.address)
     );
+
     await mockStakingPrecompiledPallet
       .connect(otherAccount)
       .addStake(valHotkey, 1, {
         value: 100,
       });
     const totalSignerColdkeyAlpha =
-      await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-        signerBytesLikeHotkey
-      );
+      await mockStakingPrecompiledPallet.totalColdkeyAlpha(ss58Address);
     const totalOtherAccountColdkeyAlpha =
       await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-        otherAccountBytesLikeHotkey
+        otherAccountSS58Address
       );
     const totalHotkeyAlpha =
       await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey);
@@ -124,7 +134,7 @@ describe("Precompiled Pallets", function () {
     expect(totalSignerColdkeyAlpha).to.equal(100);
     expect(totalOtherAccountColdkeyAlpha).to.equal(100);
     const stake = await mockStakingPrecompiledPallet.getStake(
-      signerBytesLikeHotkey,
+      ss58Address,
       valHotkey,
       1
     );
