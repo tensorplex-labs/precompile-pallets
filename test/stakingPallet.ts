@@ -41,7 +41,6 @@ describe("Precompiled Pallets", function () {
         value: 100,
       });
 
-      const bytesLikeHotkey = ss58Address;
       const totalColdkeyAlpha =
         await mockStakingPrecompiledPallet.totalColdkeyAlpha(ss58Address);
       expect(totalColdkeyAlpha).to.equal(100);
@@ -109,12 +108,6 @@ describe("Precompiled Pallets", function () {
     });
     const signerBytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
       signer.address
-    );
-    const signerBytesLikeHotkey = ethers.hexlify(signerBytes32Hotkey);
-    const otherAccountBytes32Hotkey =
-      await mockStakingPrecompiledPallet.getBytes32(otherAccount.address);
-    const otherAccountBytesLikeHotkey = ss58ToBytes(
-      convertH160ToSS58(otherAccount.address)
     );
 
     await mockStakingPrecompiledPallet
