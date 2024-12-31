@@ -2,9 +2,6 @@
 pragma solidity 0.8.20;
 
 import "./interfaces/IStakingPrecompiledPallet.sol";
-// import "hardhat/console.sol";
-
-
 
 contract MockStakingPrecompiledPallet {
     mapping(bytes32 => mapping(bytes32 => uint256)) private stakes;
