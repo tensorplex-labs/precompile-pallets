@@ -106,9 +106,6 @@ describe("Precompiled Pallets", function () {
     await mockStakingPrecompiledPallet.connect(signer).addStake(valHotkey, 1, {
       value: 100,
     });
-    const signerBytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
-      signer.address
-    );
 
     await mockStakingPrecompiledPallet
       .connect(otherAccount)

@@ -22,7 +22,6 @@ contract MockStakingPrecompiledPallet {
     }
 
     function addUserStake(bytes32 coldkey, bytes32 hotkey, uint256 netuid, uint256 amount) external payable {
-        // bytes32 coldkey = getBytes32(user);
         stakes[coldkey][hotkey] += amount;
         hotkeyAlphas[hotkey] += amount;
         coldkeyAlphas[coldkey] += amount;
@@ -37,11 +36,6 @@ contract MockStakingPrecompiledPallet {
         coldkeyAlphas[coldkey] += msg.value;
     }
 
-    function getBytes32(address addr) public view returns (bytes32) {
-        return bytes32(uint256(uint160(addr)));
-    }
-
-    // note that netuid is a noop until dtao launches
     function removeStake(bytes32 hotkey, uint256 amount, uint16 netuid) external  {
         bytes32 coldkey = addressToSS58Mapping[msg.sender];
         require(coldkey != bytes32(0), "No mapping found for address");
