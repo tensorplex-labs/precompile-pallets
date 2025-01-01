@@ -3,6 +3,7 @@ import hre, { ethers } from "hardhat";
 import { valHotkey } from "./helpers/constants";
 import { convertH160ToSS58, ss58ToBytes } from "./helpers/addressMapping";
 import { deployPrecompiledPallet } from "./helpers/deploy";
+import { mineBlocks } from "./helpers/blockHelper";
 
 describe("Precompiled Pallets", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -24,6 +25,12 @@ describe("Precompiled Pallets", function () {
         value: 100,
       });
 
+      await expect(
+        mockStakingPrecompiledPallet.addStake(valHotkey, 1, {
+          value: 100,
+        })
+      ).to.be.revertedWith("Must wait for cooldown period");
+      await mineBlocks(360);
       const totalColdkeyAlpha =
         await mockStakingPrecompiledPallet.totalColdkeyAlpha(ss58Address);
       expect(totalColdkeyAlpha).to.equal(100);
@@ -113,6 +120,12 @@ describe("Precompiled Pallets", function () {
     );
     expect(stake).to.equal(100);
     // Now we try to unstake from the signer address
+    await expect(
+      mockStakingPrecompiledPallet
+        .connect(signer)
+        .removeStake(valHotkey, 100, 1)
+    ).to.be.revertedWith("Must wait for cooldown period");
+    await mineBlocks(360);
     await mockStakingPrecompiledPallet
       .connect(signer)
       .removeStake(valHotkey, 100, 1);

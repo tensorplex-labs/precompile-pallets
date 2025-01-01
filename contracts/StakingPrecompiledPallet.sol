@@ -9,6 +9,8 @@ contract MockStakingPrecompiledPallet {
     mapping(bytes32 => uint256) private coldkeyAlphas;
     mapping(address => bytes32) private addressToSS58Mapping;
     uint256 public totalNetworks = 10;
+    mapping(bytes32 => uint256) private lastStakeBlock;
+    uint256 private constant STAKE_COOLDOWN_BLOCKS = 360;
 
     constructor() {}
 
@@ -31,22 +33,33 @@ contract MockStakingPrecompiledPallet {
     function addStake(bytes32 hotkey, uint16 netuid) external payable  {
         bytes32 coldkey = addressToSS58Mapping[msg.sender];
         require(coldkey != bytes32(0), "No mapping found for address");
+        require(
+            block.number >= lastStakeBlock[coldkey] + STAKE_COOLDOWN_BLOCKS || lastStakeBlock[coldkey] == 0,
+            "Must wait for cooldown period"
+        );
+
         stakes[coldkey][hotkey] += msg.value;
         hotkeyAlphas[hotkey] += msg.value;
         coldkeyAlphas[coldkey] += msg.value;
+        lastStakeBlock[coldkey] = block.number;
     }
 
     function removeStake(bytes32 hotkey, uint256 amount, uint16 netuid) external  {
         bytes32 coldkey = addressToSS58Mapping[msg.sender];
         require(coldkey != bytes32(0), "No mapping found for address");
+        require(
+            block.number >= lastStakeBlock[coldkey] + STAKE_COOLDOWN_BLOCKS || lastStakeBlock[coldkey] == 0,
+            "Must wait for cooldown period"
+        );
         require(stakes[coldkey][hotkey] >= amount, "Insufficient stake");
         require(hotkeyAlphas[hotkey] >= amount, "Insufficient hotkey alpha");   
         require(coldkeyAlphas[coldkey] >= amount, "Insufficient coldkey alpha");
 
-
         stakes[coldkey][hotkey] -= amount;
         hotkeyAlphas[hotkey] -= amount;
         coldkeyAlphas[coldkey] -= amount;
+        lastStakeBlock[coldkey] = block.number;
+        
         // Transfer native tokens back to the user
         (bool success, ) = payable(msg.sender).call{value: amount}("");
         require(success, "Transfer failed");
