@@ -15,7 +15,7 @@ export async function deployPrecompiledPallet() {
 export async function deploySubnetPrecompiledPallet() {
   const [owner, otherAccount] = await hre.ethers.getSigners();
   const SubnetPrecompiledPallet = await hre.ethers.getContractFactory(
-    "MockSubnetPrecompiledPallet"
+    "MockSubnetsPrecompiledPallet"
   );
   const subnetPrecompiledPallet = await SubnetPrecompiledPallet.deploy();
   return { subnetPrecompiledPallet, owner, otherAccount };
