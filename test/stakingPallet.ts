@@ -93,7 +93,7 @@ describe("Precompiled Pallets", function () {
       const stakingHotkeys = await mockStakingPrecompiledPallet.stakingHotkeys(
         bytes32Hotkey
       );
-      console.log("stakingHotkeys", stakingHotkeys);
+      expect(stakingHotkeys.length).to.equal(3);
       let cumAmt = 0;
       for (const hotkey of byteKeys) {
         const totalHotkeyAlpha =
