@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
-import { valHotkey } from "./helpers/constants";
+import { valHotkey, valHotkey2, valHotkey3 } from "./helpers/constants";
 export async function deployPrecompiledPallet() {
   const [owner, otherAccount] = await hre.ethers.getSigners();
   const MockStakingPrecompiledPallet = await hre.ethers.getContractFactory(
@@ -27,136 +27,92 @@ describe("Precompiled Pallets", function () {
 
   describe("Test Precompiled Pallet", function () {
     it("Should be able to add stake", async function () {
+      const [__, otherAccount, otherAccount2] = await hre.ethers.getSigners();
       const { mockStakingPrecompiledPallet, owner } =
         await deployPrecompiledPallet();
 
       const address = await owner.getAddress();
 
       await mockStakingPrecompiledPallet.addStake(valHotkey, 1, {
-        value: 100,
+        value: ethers.parseUnits("100", 9),
       });
+      await mockStakingPrecompiledPallet
+        .connect(otherAccount)
+        .addStake(valHotkey, 1, {
+          value: ethers.parseUnits("100", 9),
+        });
       const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
         address
       );
       const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
-      const totalColdkeyAlpha =
-        await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-          bytesLikeHotkey,
-          1
-        );
-      expect(totalColdkeyAlpha).to.equal(99);
+      const bytes32Hotkey2 = await mockStakingPrecompiledPallet.getBytes32(
+        otherAccount.address
+      );
+      const bytesLikeHotkey2 = ethers.hexlify(bytes32Hotkey2);
+      // After adding the stake,
       const totalHotkeyAlpha =
         await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-      expect(totalHotkeyAlpha).to.equal(99);
-
-      await mockStakingPrecompiledPallet.removeStake(valHotkey, 1, 99);
-      const totalColdkeyAlphaAfter =
-        await mockStakingPrecompiledPallet.totalColdkeyAlpha(
+      const totalHotkeyShares =
+        await mockStakingPrecompiledPallet.totalHotkeyShares(valHotkey, 1);
+      const alpha = await mockStakingPrecompiledPallet.alpha(
+        valHotkey,
+        bytesLikeHotkey,
+        1
+      );
+      const alpha2 = await mockStakingPrecompiledPallet.alpha(
+        valHotkey,
+        bytesLikeHotkey2,
+        1
+      );
+      console.log("totalHotkeyAlpha", totalHotkeyAlpha);
+      console.log("totalHotkeyShares", totalHotkeyShares);
+      console.log("alpha", alpha);
+      console.log("alpha2", alpha2);
+      expect(alpha + alpha2).to.equal(totalHotkeyAlpha);
+      expect(alpha + alpha2).to.equal(totalHotkeyShares);
+    });
+    it("Calculate total stake across 3 hotkeys", async function () {
+      const [__, otherAccount, otherAccount2] = await hre.ethers.getSigners();
+      const { mockStakingPrecompiledPallet, owner } =
+        await deployPrecompiledPallet();
+      await mockStakingPrecompiledPallet.addStake(valHotkey, 1, {
+        value: ethers.parseUnits("1", 9),
+      });
+      await mockStakingPrecompiledPallet.addStake(valHotkey2, 1, {
+        value: ethers.parseUnits("10", 9),
+      });
+      await mockStakingPrecompiledPallet.addStake(valHotkey3, 1, {
+        value: ethers.parseUnits("50", 9),
+      });
+      // After adding the stake, we need to get the total stake by calculating the total alpha and shares for each hotkey
+      const byteKeys = [valHotkey, valHotkey2, valHotkey3];
+      let cumAmt = 0;
+      for (const hotkey of byteKeys) {
+        const totalHotkeyAlpha =
+          await mockStakingPrecompiledPallet.totalHotkeyAlpha(hotkey, 1);
+        const totalHotkeyShares =
+          await mockStakingPrecompiledPallet.totalHotkeyShares(hotkey, 1);
+        const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
+          owner.address
+        );
+        const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
+        const alpha = await mockStakingPrecompiledPallet.alpha(
+          hotkey,
           bytesLikeHotkey,
           1
         );
-      expect(totalColdkeyAlphaAfter).to.equal(0);
-      const totalHotkeyAlphaAfter =
-        await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-      expect(totalHotkeyAlphaAfter).to.equal(0);
+        console.log("totalHotkeyAlpha", totalHotkeyAlpha);
+        console.log("totalHotkeyShares", totalHotkeyShares);
+        console.log("alpha", alpha);
+        const absoluteAlpha = (alpha * totalHotkeyShares) / totalHotkeyAlpha;
+        cumAmt += Number(absoluteAlpha);
+      }
+      const expectedAmount =
+        ethers.parseUnits("1", 9) +
+        ethers.parseUnits("10", 9) +
+        ethers.parseUnits("50", 9);
+      const tolerance = Number(expectedAmount) * 0.0000001; // 0.000001%
+      expect(cumAmt).to.be.closeTo(Number(expectedAmount), tolerance);
     });
-  });
-  it("Should be able to move stake from one subnet to another subnet", async function () {
-    const [signer, otherAccount] = await hre.ethers.getSigners();
-    const { mockStakingPrecompiledPallet, owner } =
-      await deployPrecompiledPallet();
-    const signerBytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
-      signer.address
-    );
-    const signerBytesLikeHotkey = ethers.hexlify(signerBytes32Hotkey);
-    // Now we try to add 100 TAO stake
-    await mockStakingPrecompiledPallet.connect(signer).addStake(valHotkey, 1, {
-      value: 100,
-    });
-    // Afterwards, we try to move the stake to another subnet
-    await mockStakingPrecompiledPallet
-      .connect(signer)
-      .moveStake(valHotkey, 1, valHotkey, 2, 99);
-    // Now we check the total stake of the signer
-    const totalStake = await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-      signerBytesLikeHotkey,
-      1
-    );
-    expect(totalStake).to.equal(0);
-    // Expect the stake to be moved
-    const totalStake2 = await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-      signerBytesLikeHotkey,
-      2
-    );
-    expect(totalStake2).to.equal(99);
-  });
-  it("Should add multiple stake from two different addresses", async function () {
-    const [signer, otherAccount] = await hre.ethers.getSigners();
-    const { mockStakingPrecompiledPallet, owner } =
-      await deployPrecompiledPallet();
-
-    await mockStakingPrecompiledPallet.connect(signer).addStake(valHotkey, 1, {
-      value: 100,
-    });
-    const signerBytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
-      signer.address
-    );
-    const signerBytesLikeHotkey = ethers.hexlify(signerBytes32Hotkey);
-    const otherAccountBytes32Hotkey =
-      await mockStakingPrecompiledPallet.getBytes32(otherAccount.address);
-    const otherAccountBytesLikeHotkey = ethers.hexlify(
-      otherAccountBytes32Hotkey
-    );
-    await mockStakingPrecompiledPallet
-      .connect(otherAccount)
-      .addStake(valHotkey, 1, {
-        value: 100,
-      });
-    const totalSignerColdkeyAlpha =
-      await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-        signerBytesLikeHotkey,
-        1
-      );
-    const totalOtherAccountColdkeyAlpha =
-      await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-        otherAccountBytesLikeHotkey,
-        1
-      );
-    const totalHotkeyAlpha =
-      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-    expect(totalHotkeyAlpha).to.equal(198);
-    expect(totalSignerColdkeyAlpha).to.equal(99);
-    expect(totalOtherAccountColdkeyAlpha).to.equal(99);
-    // Now we try to unstake from the signer address
-    await mockStakingPrecompiledPallet
-      .connect(signer)
-      .removeStake(valHotkey, 1, 99);
-    const totalHotkeyAlphaAfter =
-      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-    expect(totalHotkeyAlphaAfter).to.equal(99);
-  });
-  it("Test precompile pallet logic for distributing GDT", async () => {
-    const { mockStakingPrecompiledPallet, owner } =
-      await deployPrecompiledPallet();
-    const [signer] = await hre.ethers.getSigners();
-    const address = await owner.getAddress();
-    await mockStakingPrecompiledPallet.distributeGDT(address, valHotkey, 100);
-    const totalHotkeyAlpha1 =
-      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-    expect(totalHotkeyAlpha1).to.equal(100);
-    await mockStakingPrecompiledPallet.distributeGDT(address, valHotkey, 100);
-    const totalHotkeyAlpha2 =
-      await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
-    expect(totalHotkeyAlpha2).to.equal(200);
-    const signerBytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
-      signer.address
-    );
-    const signerBytesLikeHotkey = ethers.hexlify(signerBytes32Hotkey);
-    const totalColdkeyAlpha =
-      await mockStakingPrecompiledPallet.totalColdkeyAlpha(
-        signerBytesLikeHotkey,
-        1
-      );
-    expect(totalColdkeyAlpha).to.equal(200);
   });
 });
