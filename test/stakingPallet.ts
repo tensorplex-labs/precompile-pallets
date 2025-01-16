@@ -86,6 +86,14 @@ describe("Precompiled Pallets", function () {
       });
       // After adding the stake, we need to get the total stake by calculating the total alpha and shares for each hotkey
       const byteKeys = [valHotkey, valHotkey2, valHotkey3];
+      const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
+        owner.address
+      );
+      const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
+      const stakingHotkeys = await mockStakingPrecompiledPallet.stakingHotkeys(
+        bytes32Hotkey
+      );
+      console.log("stakingHotkeys", stakingHotkeys);
       let cumAmt = 0;
       for (const hotkey of byteKeys) {
         const totalHotkeyAlpha =

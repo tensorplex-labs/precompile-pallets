@@ -15,6 +15,10 @@ contract MockStakingPrecompiledPallet {
     mapping(uint256 => uint256) public subnetTAOs;
     uint256 public totalNetworks = 10;
 
+    // Add this new mapping to track hotkeys per coldkey
+    mapping(bytes32 => bytes32[]) public coldkeyHotkeys; // coldkey => array of hotkeys
+    mapping(bytes32 => mapping(bytes32 => bool)) private isHotkeyRegistered; // coldkey => hotkey => exists
+
     constructor() {
         for (uint256 i = 0; i < totalNetworks; i++) {
             subnetAlphas[i] = 1000000000000000000;
@@ -26,6 +30,10 @@ contract MockStakingPrecompiledPallet {
         // This function allows the contract to receive ETH
     }
 
+    function stakingHotkeys(bytes32 hotkey) external view returns (bytes32[] memory) {
+        return coldkeyHotkeys[hotkey];
+    }
+
     // Helper functions remain the same
     function getBytes32(address addr) public pure returns (bytes32) {
         return bytes32(uint256(uint160(addr)));
@@ -35,6 +43,12 @@ contract MockStakingPrecompiledPallet {
         uint256 taoAmount = msg.value;
         uint256 alphaAmount = calculateSwapOutput(netuid, taoAmount, true);
         bytes32 coldkey = getBytes32(msg.sender);
+
+        // Add hotkey to coldkey's list if not already registered
+        if (!isHotkeyRegistered[coldkey][hotkey]) {
+            coldkeyHotkeys[coldkey].push(hotkey);
+            isHotkeyRegistered[coldkey][hotkey] = true;
+        }
 
         // Get current values
         uint256 currentTotalAlpha = totalHotkeyAlpha[hotkey][netuid];
@@ -90,6 +104,22 @@ contract MockStakingPrecompiledPallet {
 
         // Transfer TAO back to user
         payable(msg.sender).transfer(taoAmount);
+
+        // If this was the last stake (no more shares), remove the hotkey from coldkey's list
+        if (alpha[hotkey][coldkey][netuid] == 0) {
+            // Check if this was the last netuid with stakes
+            bool hasOtherStakes = false;
+            for (uint256 i = 0; i < totalNetworks; i++) {
+                if (i != netuid && alpha[hotkey][coldkey][i] > 0) {
+                    hasOtherStakes = true;
+                    break;
+                }
+            }
+
+            if (!hasOtherStakes) {
+                removeHotkeyFromColdkey(coldkey, hotkey);
+            }
+        }
     }
 
     function getStake(bytes32 hotkey, bytes32 coldkey, uint256 netuid) external view returns (uint256) {
@@ -107,5 +137,24 @@ contract MockStakingPrecompiledPallet {
         uint256 numerator = amountIn * reserveOut;
         uint256 denominator = reserveIn + amountIn;
         return numerator / denominator;
+    }
+
+    // Add this helper function
+    function removeHotkeyFromColdkey(bytes32 coldkey, bytes32 hotkey) private {
+        bytes32[] storage hotkeys = coldkeyHotkeys[coldkey];
+        for (uint256 i = 0; i < hotkeys.length; i++) {
+            if (hotkeys[i] == hotkey) {
+                // Swap with last element and pop
+                hotkeys[i] = hotkeys[hotkeys.length - 1];
+                hotkeys.pop();
+                isHotkeyRegistered[coldkey][hotkey] = false;
+                break;
+            }
+        }
+    }
+
+    // Add this view function to get all hotkeys for a coldkey
+    function getHotkeysForColdkey(bytes32 coldkey) external view returns (bytes32[] memory) {
+        return coldkeyHotkeys[coldkey];
     }
 }
