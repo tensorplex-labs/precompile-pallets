@@ -71,8 +71,8 @@ contract MockStakingPrecompiledPallet {
             totalHotkeyShares[hotkey][netuid] = alphaAmount;
         } else {
             // Calculate new shares
-            uint256 valuePerShare = (currentTotalAlpha * 1e18) / currentTotalShares; // Use 1e18 for precision
-            uint256 newShares = (alphaAmount * 1e18) / valuePerShare;
+            uint256 valuePerShare = (currentTotalAlpha) / currentTotalShares; // Use 1e18 for precision
+            uint256 newShares = (alphaAmount) / valuePerShare;
 
             // Update storage
             totalHotkeyAlpha[hotkey][netuid] += alphaAmount;
@@ -98,7 +98,7 @@ contract MockStakingPrecompiledPallet {
 
         // Calculate shares to remove based on alpha amount
         // uint256 sharesToRemove = (alphaAmount * currentTotalShares) / currentTotalAlpha;
-        uint256 sharesToRemove = (alphaAmount * currentTotalShares * 1e18) / (currentTotalAlpha * 1e18);
+        uint256 sharesToRemove = (alphaAmount * currentTotalShares) / (currentTotalAlpha);
         require(currentShares >= sharesToRemove, "Insufficient shares");
 
         uint256 taoAmount = calculateSwapOutput(netuid, alphaAmount, false);
