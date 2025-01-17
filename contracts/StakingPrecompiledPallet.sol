@@ -71,8 +71,8 @@ contract MockStakingPrecompiledPallet {
             totalHotkeyShares[hotkey][netuid] = alphaAmount;
         } else {
             // Calculate new shares
-            uint256 valuePerShare = (currentTotalAlpha * 1e9) / currentTotalShares; // Use 1e18 for precision
-            uint256 newShares = (alphaAmount * 1e9) / valuePerShare;
+            uint256 valuePerShare = (currentTotalAlpha * 1e18) / currentTotalShares; // Use 1e18 for precision
+            uint256 newShares = (alphaAmount * 1e18) / valuePerShare;
 
             // Update storage
             totalHotkeyAlpha[hotkey][netuid] += alphaAmount;
@@ -85,7 +85,7 @@ contract MockStakingPrecompiledPallet {
         subnetAlphas[netuid] -= alphaAmount;
     }
 
-    function removeStake(bytes32 hotkey, uint256 netuid, uint256 shareAmount) external {
+    function removeStake(bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external {
         bytes32 coldkey = h160toSS58Address[msg.sender];
         if (coldkey == bytes32(0)) {
             revert("Coldkey not found");
@@ -96,16 +96,17 @@ contract MockStakingPrecompiledPallet {
         uint256 currentShares = alpha[hotkey][coldkey][netuid];
         uint256 currentTotalShares = totalHotkeyShares[hotkey][netuid];
 
-        require(currentShares >= shareAmount, "Insufficient shares");
+        // Calculate shares to remove based on alpha amount
+        // uint256 sharesToRemove = (alphaAmount * currentTotalShares) / currentTotalAlpha;
+        uint256 sharesToRemove = (alphaAmount * currentTotalShares * 1e18) / (currentTotalAlpha * 1e18);
+        require(currentShares >= sharesToRemove, "Insufficient shares");
 
-        // Calculate alpha amount to remove
-        uint256 alphaAmount = (shareAmount * currentTotalAlpha) / currentTotalShares;
         uint256 taoAmount = calculateSwapOutput(netuid, alphaAmount, false);
 
         // Update share pool values
         totalHotkeyAlpha[hotkey][netuid] -= alphaAmount;
-        alpha[hotkey][coldkey][netuid] -= shareAmount;
-        totalHotkeyShares[hotkey][netuid] -= shareAmount;
+        alpha[hotkey][coldkey][netuid] -= sharesToRemove;
+        totalHotkeyShares[hotkey][netuid] -= sharesToRemove;
 
         // Update subnet pools
         require(subnetAlphas[netuid] >= alphaAmount, "Insufficient alpha in subnet");

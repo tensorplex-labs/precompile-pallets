@@ -14,7 +14,10 @@ const config: HardhatUserConfig = {
     },
   },
   networks: {
-    hardhat: {},
+    hardhat: {
+      gasPrice: 0,
+      initialBaseFeePerGas: 0,
+    },
     taoevm: {
       url: "http://127.0.0.1:8888",
       chainId: 31337,
