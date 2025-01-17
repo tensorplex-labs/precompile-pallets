@@ -28,7 +28,13 @@ interface IStakingPrecompiledPallet {
     /// @param dst_hotkey The hotkey to move stake to
     /// @param dst_netuid The subnet ID to move stake to
     /// @param amount The amount of stake to move
-    function moveStake(bytes32 src_hotkey, uint256 src_netuid, bytes32 dst_hotkey, uint256 dst_netuid, uint256 amount) external;
+    function moveStake(
+        bytes32 src_hotkey,
+        uint256 src_netuid,
+        bytes32 dst_hotkey,
+        uint256 dst_netuid,
+        uint256 amount
+    ) external;
 
     /// @notice Gets the subnet alpha for a given subnet
     /// @param netuid The subnet ID to query
@@ -58,4 +64,3 @@ interface IStakingPrecompiledPallet {
     /// @return The total number of networks
     function totalNetworks() external view returns (uint256);
 }
-

@@ -32,6 +32,22 @@ describe("Precompiled Pallets", function () {
         await deployPrecompiledPallet();
 
       const address = await owner.getAddress();
+      const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
+        address
+      );
+      const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
+      const bytes32Hotkey2 = await mockStakingPrecompiledPallet.getBytes32(
+        otherAccount.address
+      );
+      const bytesLikeHotkey2 = ethers.hexlify(bytes32Hotkey2);
+      await mockStakingPrecompiledPallet.updateH160toSS58Address(
+        await owner.getAddress(),
+        bytes32Hotkey
+      );
+      await mockStakingPrecompiledPallet.updateH160toSS58Address(
+        await otherAccount.getAddress(),
+        bytes32Hotkey2
+      );
 
       await mockStakingPrecompiledPallet.addStake(valHotkey, 1, {
         value: ethers.parseUnits("100", 9),
@@ -41,14 +57,7 @@ describe("Precompiled Pallets", function () {
         .addStake(valHotkey, 1, {
           value: ethers.parseUnits("100", 9),
         });
-      const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
-        address
-      );
-      const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
-      const bytes32Hotkey2 = await mockStakingPrecompiledPallet.getBytes32(
-        otherAccount.address
-      );
-      const bytesLikeHotkey2 = ethers.hexlify(bytes32Hotkey2);
+
       // After adding the stake,
       const totalHotkeyAlpha =
         await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey, 1);
@@ -75,6 +84,25 @@ describe("Precompiled Pallets", function () {
       const [__, otherAccount, otherAccount2] = await hre.ethers.getSigners();
       const { mockStakingPrecompiledPallet, owner } =
         await deployPrecompiledPallet();
+      const address = await owner.getAddress();
+      const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
+        address
+      );
+      const bytes32Hotkey2 = await mockStakingPrecompiledPallet.getBytes32(
+        otherAccount.address
+      );
+      await mockStakingPrecompiledPallet.updateH160toSS58Address(
+        await owner.getAddress(),
+        bytes32Hotkey
+      );
+      await mockStakingPrecompiledPallet.updateH160toSS58Address(
+        await otherAccount.getAddress(),
+        bytes32Hotkey2
+      );
+      await mockStakingPrecompiledPallet.updateH160toSS58Address(
+        await otherAccount.getAddress(),
+        valHotkey2
+      );
       await mockStakingPrecompiledPallet.addStake(valHotkey, 1, {
         value: ethers.parseUnits("1", 9),
       });
@@ -86,10 +114,6 @@ describe("Precompiled Pallets", function () {
       });
       // After adding the stake, we need to get the total stake by calculating the total alpha and shares for each hotkey
       const byteKeys = [valHotkey, valHotkey2, valHotkey3];
-      const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
-        owner.address
-      );
-      const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
       const stakingHotkeys = await mockStakingPrecompiledPallet.stakingHotkeys(
         bytes32Hotkey
       );

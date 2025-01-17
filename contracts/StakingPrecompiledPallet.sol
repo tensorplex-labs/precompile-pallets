@@ -18,6 +18,7 @@ contract MockStakingPrecompiledPallet {
     // Add this new mapping to track hotkeys per coldkey
     mapping(bytes32 => bytes32[]) public coldkeyHotkeys; // coldkey => array of hotkeys
     mapping(bytes32 => mapping(bytes32 => bool)) private isHotkeyRegistered; // coldkey => hotkey => exists
+    mapping(address => bytes32) public h160toSS58Address; // evmAddress => coldkey
 
     constructor() {
         for (uint256 i = 0; i < totalNetworks; i++) {
@@ -28,6 +29,10 @@ contract MockStakingPrecompiledPallet {
 
     receive() external payable {
         // This function allows the contract to receive ETH
+    }
+
+    function updateH160toSS58Address(address h160, bytes32 ss58) external {
+        h160toSS58Address[h160] = ss58;
     }
 
     function stakingHotkeys(bytes32 hotkey) external view returns (bytes32[] memory) {
@@ -42,7 +47,7 @@ contract MockStakingPrecompiledPallet {
     function addStake(bytes32 hotkey, uint256 netuid) external payable {
         uint256 taoAmount = msg.value;
         uint256 alphaAmount = calculateSwapOutput(netuid, taoAmount, true);
-        bytes32 coldkey = getBytes32(msg.sender);
+        bytes32 coldkey = h160toSS58Address[msg.sender];
 
         // Add hotkey to coldkey's list if not already registered
         if (!isHotkeyRegistered[coldkey][hotkey]) {
@@ -78,7 +83,7 @@ contract MockStakingPrecompiledPallet {
     }
 
     function removeStake(bytes32 hotkey, uint256 netuid, uint256 shareAmount) external {
-        bytes32 coldkey = getBytes32(msg.sender);
+        bytes32 coldkey = h160toSS58Address[msg.sender];
 
         // Get current values
         uint256 currentTotalAlpha = totalHotkeyAlpha[hotkey][netuid];
