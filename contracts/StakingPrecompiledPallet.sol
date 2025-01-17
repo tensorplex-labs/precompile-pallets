@@ -48,6 +48,9 @@ contract MockStakingPrecompiledPallet {
         uint256 taoAmount = msg.value;
         uint256 alphaAmount = calculateSwapOutput(netuid, taoAmount, true);
         bytes32 coldkey = h160toSS58Address[msg.sender];
+        if (coldkey == bytes32(0)) {
+            revert("Coldkey not found");
+        }
 
         // Add hotkey to coldkey's list if not already registered
         if (!isHotkeyRegistered[coldkey][hotkey]) {
@@ -84,6 +87,9 @@ contract MockStakingPrecompiledPallet {
 
     function removeStake(bytes32 hotkey, uint256 netuid, uint256 shareAmount) external {
         bytes32 coldkey = h160toSS58Address[msg.sender];
+        if (coldkey == bytes32(0)) {
+            revert("Coldkey not found");
+        }
 
         // Get current values
         uint256 currentTotalAlpha = totalHotkeyAlpha[hotkey][netuid];
