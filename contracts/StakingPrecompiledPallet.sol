@@ -169,4 +169,67 @@ contract MockStakingPrecompiledPallet {
     function getHotkeysForColdkey(bytes32 coldkey) external view returns (bytes32[] memory) {
         return coldkeyHotkeys[coldkey];
     }
+
+    function transferStake(bytes32 fromHotkey, bytes32 toHotkey, uint256 netuid, uint256 alphaAmount) external {
+        bytes32 coldkey = h160toSS58Address[msg.sender];
+        if (coldkey == bytes32(0)) {
+            revert("Coldkey not found");
+        }
+
+        // Verify sender owns the fromHotkey
+        require(isHotkeyRegistered[coldkey][fromHotkey], "Not authorized to transfer from this hotkey");
+
+        // Get current values for source hotkey
+        uint256 fromTotalAlpha = totalHotkeyAlpha[fromHotkey][netuid];
+        uint256 fromCurrentShares = alpha[fromHotkey][coldkey][netuid];
+        uint256 fromTotalShares = totalHotkeyShares[fromHotkey][netuid];
+
+        // Calculate shares to transfer based on alpha amount
+        uint256 sharesToTransfer = (alphaAmount * fromTotalShares) / fromTotalAlpha;
+        require(fromCurrentShares >= sharesToTransfer, "Insufficient shares");
+
+        // Remove shares from source hotkey
+        totalHotkeyAlpha[fromHotkey][netuid] -= alphaAmount;
+        alpha[fromHotkey][coldkey][netuid] -= sharesToTransfer;
+        totalHotkeyShares[fromHotkey][netuid] -= sharesToTransfer;
+
+        // Add stake to destination hotkey (similar to addStake logic)
+        if (!isHotkeyRegistered[coldkey][toHotkey]) {
+            coldkeyHotkeys[coldkey].push(toHotkey);
+            isHotkeyRegistered[coldkey][toHotkey] = true;
+        }
+
+        uint256 toTotalShares = totalHotkeyShares[toHotkey][netuid];
+        if (toTotalShares == 0) {
+            // First stake to this hotkey
+            totalHotkeyAlpha[toHotkey][netuid] = alphaAmount;
+            alpha[toHotkey][coldkey][netuid] = alphaAmount;
+            totalHotkeyShares[toHotkey][netuid] = alphaAmount;
+        } else {
+            // Calculate new shares for destination hotkey
+            uint256 toTotalAlpha = totalHotkeyAlpha[toHotkey][netuid];
+            uint256 valuePerShare = toTotalAlpha / toTotalShares;
+            uint256 newShares = alphaAmount / valuePerShare;
+
+            // Update storage
+            totalHotkeyAlpha[toHotkey][netuid] += alphaAmount;
+            alpha[toHotkey][coldkey][netuid] += newShares;
+            totalHotkeyShares[toHotkey][netuid] += newShares;
+        }
+
+        // Check if we need to remove the source hotkey from coldkey's list
+        if (alpha[fromHotkey][coldkey][netuid] == 0) {
+            bool hasOtherStakes = false;
+            for (uint256 i = 0; i < totalNetworks; i++) {
+                if (i != netuid && alpha[fromHotkey][coldkey][i] > 0) {
+                    hasOtherStakes = true;
+                    break;
+                }
+            }
+
+            if (!hasOtherStakes) {
+                removeHotkeyFromColdkey(coldkey, fromHotkey);
+            }
+        }
+    }
 }

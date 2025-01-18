@@ -233,4 +233,48 @@ describe("Precompiled Pallets", function () {
       expect(cumAmt).to.be.closeTo(Number(expectedAmount), tolerance);
     });
   });
+  describe("Transfer Stake", function () {
+    it("Should be able to transfer stake", async function () {
+      const [__, otherAccount, otherAccount2] = await hre.ethers.getSigners();
+      const { mockStakingPrecompiledPallet, owner } =
+        await deployPrecompiledPallet();
+      const address = await owner.getAddress();
+      const bytes32Hotkey = await mockStakingPrecompiledPallet.getBytes32(
+        address
+      );
+      const bytes32Hotkey2 = await mockStakingPrecompiledPallet.getBytes32(
+        otherAccount.address
+      );
+
+      await mockStakingPrecompiledPallet.updateH160toSS58Address(
+        await owner.getAddress(),
+        bytes32Hotkey
+      );
+      await mockStakingPrecompiledPallet.updateH160toSS58Address(
+        await otherAccount.getAddress(),
+        bytes32Hotkey2
+      );
+      await mockStakingPrecompiledPallet.addStake(valHotkey, 1, {
+        value: ethers.parseUnits("100", 9),
+      });
+      await mockStakingPrecompiledPallet.transferStake(
+        valHotkey,
+        valHotkey2,
+        1,
+        ethers.parseUnits("50", 9)
+      );
+      const bytesLikeHotkey = ethers.hexlify(bytes32Hotkey);
+      const totalHotkeyAlpha2 =
+        await mockStakingPrecompiledPallet.totalHotkeyAlpha(valHotkey2, 1);
+      const totalHotkeyShares2 =
+        await mockStakingPrecompiledPallet.totalHotkeyShares(valHotkey2, 1);
+      const alphaShare = await mockStakingPrecompiledPallet.alpha(
+        valHotkey2,
+        bytesLikeHotkey,
+        1
+      );
+      const alpha = (alphaShare * totalHotkeyShares2) / totalHotkeyAlpha2;
+      expect(alpha).to.equal(ethers.parseUnits("50", 9));
+    });
+  });
 });
