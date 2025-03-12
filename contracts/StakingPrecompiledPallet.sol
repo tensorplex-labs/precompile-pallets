@@ -143,6 +143,41 @@ contract MockStakingPrecompiledPallet {
         return (shares * totalAlpha) / totalShares;
     }
 
+    function transferStake(bytes32 fromColdkey, bytes32 toColdkey, bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external {
+        bytes32 senderColdkey = h160toSS58Address[msg.sender];
+        if (senderColdkey == bytes32(0)) {
+            revert("Sender coldkey not found");
+        }
+
+        // Verify sender owns the fromColdkey
+        require(senderColdkey == fromColdkey, "Not authorized to transfer from this coldkey");
+
+        // Get current values for source coldkey
+        uint256 fromCurrentShares = alpha[hotkey][fromColdkey][netuid];
+        uint256 fromTotalShares = totalHotkeyShares[hotkey][netuid];
+        uint256 fromTotalAlpha = totalHotkeyAlpha[hotkey][netuid];
+
+        // Calculate shares to transfer based on alpha amount
+        uint256 sharesToTransfer = (alphaAmount * fromTotalShares) / fromTotalAlpha;
+        require(fromCurrentShares >= sharesToTransfer, "Insufficient shares");
+
+        // Remove shares from source coldkey
+        alpha[hotkey][fromColdkey][netuid] -= sharesToTransfer;
+        // Add shares to destination coldkey
+        alpha[hotkey][toColdkey][netuid] += sharesToTransfer;
+
+        // If this was the last stake (no more shares), remove the hotkey from fromColdkey's list
+        if (alpha[hotkey][fromColdkey][netuid] == 0) {
+            removeHotkeyFromColdkey(fromColdkey, hotkey);
+        }
+
+        // Add hotkey to toColdkey's list if not already present
+        if (!isHotkeyRegistered[toColdkey][hotkey]) {
+            coldkeyHotkeys[toColdkey].push(hotkey);
+            isHotkeyRegistered[toColdkey][hotkey] = true;
+        }
+    }
+
     function calculateSwapOutput(uint256 netuid, uint256 amountIn, bool isNativeToAlpha) public view returns (uint256) {
         uint256 reserveIn = isNativeToAlpha ? subnetTAOs[netuid] : subnetAlphas[netuid];
         uint256 reserveOut = isNativeToAlpha ? subnetAlphas[netuid] : subnetTAOs[netuid];
@@ -170,7 +205,7 @@ contract MockStakingPrecompiledPallet {
         return coldkeyHotkeys[coldkey];
     }
 
-    function transferStake(bytes32 fromHotkey, bytes32 toHotkey, uint256 netuid, uint256 alphaAmount) external {
+    function transferHotkeyStake(bytes32 fromHotkey, bytes32 toHotkey, uint256 netuid, uint256 alphaAmount) external {
         bytes32 coldkey = h160toSS58Address[msg.sender];
         if (coldkey == bytes32(0)) {
             revert("Coldkey not found");
