@@ -4,7 +4,7 @@ pragma solidity 0.8.20;
 import "./interfaces/IStakingPrecompiledPallet.sol";
 // import "hardhat/console.sol";
 
-contract MockStakingPrecompiledPallet {
+contract MockStakingPrecompiledPalletV2 {
     // Storage for share pool implementation
     mapping(bytes32 => mapping(uint256 => uint256)) public totalHotkeyAlpha; // hotkey => netuid => value
     mapping(bytes32 => mapping(bytes32 => mapping(uint256 => uint256))) public alpha; // hotkey => coldkey => netuid => shares
@@ -44,8 +44,7 @@ contract MockStakingPrecompiledPallet {
         return bytes32(uint256(uint160(addr)));
     }
 
-    function addStake(bytes32 hotkey, uint256 netuid) external payable {
-        uint256 taoAmount = msg.value;
+    function addStake(bytes32 hotkey, uint256 taoAmount, uint256 netuid) external {
         uint256 alphaAmount = calculateSwapOutput(netuid, taoAmount, true);
         bytes32 coldkey = h160toSS58Address[msg.sender];
         if (coldkey == bytes32(0)) {
@@ -84,6 +83,7 @@ contract MockStakingPrecompiledPallet {
         subnetTAOs[netuid] += taoAmount;
         subnetAlphas[netuid] -= alphaAmount;
     }
+
 
 
     function removeStake(bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external {
