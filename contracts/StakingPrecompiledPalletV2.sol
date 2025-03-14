@@ -144,14 +144,14 @@ contract MockStakingPrecompiledPalletV2 {
         return (shares * totalAlpha) / totalShares;
     }
 
-    function transferStake(bytes32 fromColdkey, bytes32 toColdkey, bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external {
-        bytes32 senderColdkey = h160toSS58Address[msg.sender];
-        if (senderColdkey == bytes32(0)) {
+    function transferStake(bytes32 toColdkey, bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external {
+        bytes32 fromColdkey = h160toSS58Address[msg.sender];
+        if (fromColdkey == bytes32(0)) {
             revert("Sender coldkey not found");
         }
 
         // Verify sender owns the fromColdkey
-        require(senderColdkey == fromColdkey, "Not authorized to transfer from this coldkey");
+        // require(senderColdkey == fromColdkey, "Not authorized to transfer from this coldkey");
 
         // Get current values for source coldkey
         uint256 fromCurrentShares = alpha[hotkey][fromColdkey][netuid];
