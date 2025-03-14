@@ -144,7 +144,7 @@ contract MockStakingPrecompiledPalletV2 {
         return (shares * totalAlpha) / totalShares;
     }
 
-    function transferStake(bytes32 toColdkey, bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external {
+    function transferStake(bytes32 toColdkey, bytes32 hotkey, uint256 fromNetuid, uint256 toNetuid, uint256 alphaAmount) external {
         bytes32 fromColdkey = h160toSS58Address[msg.sender];
         if (fromColdkey == bytes32(0)) {
             revert("Sender coldkey not found");
@@ -154,21 +154,21 @@ contract MockStakingPrecompiledPalletV2 {
         // require(senderColdkey == fromColdkey, "Not authorized to transfer from this coldkey");
 
         // Get current values for source coldkey
-        uint256 fromCurrentShares = alpha[hotkey][fromColdkey][netuid];
-        uint256 fromTotalShares = totalHotkeyShares[hotkey][netuid];
-        uint256 fromTotalAlpha = totalHotkeyAlpha[hotkey][netuid];
+        uint256 fromCurrentShares = alpha[hotkey][fromColdkey][fromNetuid];
+        uint256 fromTotalShares = totalHotkeyShares[hotkey][fromNetuid];
+        uint256 fromTotalAlpha = totalHotkeyAlpha[hotkey][fromNetuid];
 
         // Calculate shares to transfer based on alpha amount
         uint256 sharesToTransfer = (alphaAmount * fromTotalShares) / fromTotalAlpha;
         require(fromCurrentShares >= sharesToTransfer, "Insufficient shares");
 
         // Remove shares from source coldkey
-        alpha[hotkey][fromColdkey][netuid] -= sharesToTransfer;
+        alpha[hotkey][fromColdkey][fromNetuid] -= sharesToTransfer;
         // Add shares to destination coldkey
-        alpha[hotkey][toColdkey][netuid] += sharesToTransfer;
+        alpha[hotkey][toColdkey][toNetuid] += sharesToTransfer;
 
         // If this was the last stake (no more shares), remove the hotkey from fromColdkey's list
-        if (alpha[hotkey][fromColdkey][netuid] == 0) {
+        if (alpha[hotkey][fromColdkey][fromNetuid] == 0) {
             removeHotkeyFromColdkey(fromColdkey, hotkey);
         }
 
