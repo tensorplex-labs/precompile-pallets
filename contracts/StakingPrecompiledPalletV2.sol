@@ -86,7 +86,7 @@ contract MockStakingPrecompiledPalletV2 {
 
 
 
-    function removeStake(bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external {
+    function removeStake(bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external payable {
         bytes32 coldkey = h160toSS58Address[msg.sender];
         if (coldkey == bytes32(0)) {
             revert("Coldkey not found");
@@ -138,12 +138,93 @@ contract MockStakingPrecompiledPalletV2 {
     }
 
     function getStake(bytes32 hotkey, bytes32 coldkey, uint256 netuid) external view returns (uint256) {
+        return _getStake(hotkey, coldkey, netuid);
+    }
+
+    function _getStake(bytes32 hotkey, bytes32 coldkey, uint256 netuid) internal view returns (uint256) {
         uint256 shares = alpha[hotkey][coldkey][netuid];
         uint256 totalShares = totalHotkeyShares[hotkey][netuid];
         if (totalShares == 0) return 0;
 
         uint256 totalAlpha = totalHotkeyAlpha[hotkey][netuid];
         return (shares * totalAlpha) / totalShares;
+    }
+
+    function swapStake(bytes32 hotkey, uint256 fromNetuid, uint256 toNetuid, uint256 alphaAmount) external {
+        bytes32 coldkey = h160toSS58Address[msg.sender];
+        if (coldkey == bytes32(0)) {
+            revert("Coldkey not found");
+        }
+
+        // Get current values
+        uint256 currentTotalAlpha = totalHotkeyAlpha[hotkey][fromNetuid];
+        uint256 currentShares = alpha[hotkey][coldkey][fromNetuid];
+        uint256 currentTotalShares = totalHotkeyShares[hotkey][fromNetuid];
+
+        // Calculate shares to remove based on alpha amount
+        uint256 sharesToRemove = (alphaAmount * currentTotalShares) / currentTotalAlpha;
+        require(currentShares >= sharesToRemove, "Insufficient shares");
+        uint256 taoAmount = calculateSwapOutput(fromNetuid, alphaAmount, false);
+        // Update share pool values
+        totalHotkeyAlpha[hotkey][fromNetuid] -= alphaAmount;
+        alpha[hotkey][coldkey][fromNetuid] -= sharesToRemove;
+        totalHotkeyShares[hotkey][fromNetuid] -= sharesToRemove;
+        // Update subnet pools
+        require(subnetAlphas[fromNetuid] >= alphaAmount, "Insufficient alpha in subnet");
+        subnetAlphas[fromNetuid] += alphaAmount;
+        require(subnetTAOs[fromNetuid] >= taoAmount, "Insufficient TAO in subnet");
+        subnetTAOs[fromNetuid] -= taoAmount;
+        // If this was the last stake (no more shares), remove the hotkey from coldkey's list
+        if (alpha[hotkey][coldkey][fromNetuid] == 0) {
+            // Check if this was the last netuid with stakes
+            bool hasOtherStakes = false;
+            for (uint256 i = 0; i < totalNetworks; i++) {
+                if (i != fromNetuid && alpha[hotkey][coldkey][i] > 0) {
+                    hasOtherStakes = true;
+                    break;
+                }
+            }
+
+            if (!hasOtherStakes) {
+                removeHotkeyFromColdkey(coldkey, hotkey);
+            }
+        }
+
+        // Add stake to destination hotkey (similar to addStake logic)
+        uint256 outputAlphaAmount = calculateSwapOutput(toNetuid, taoAmount, true);
+
+        // Add hotkey to coldkey's list if not already registered
+        if (!isHotkeyRegistered[coldkey][hotkey]) {
+            coldkeyHotkeys[coldkey].push(hotkey);
+            isHotkeyRegistered[coldkey][hotkey] = true;
+        }
+
+        // Get current values
+        uint256 toNetuidCurrentTotalAlpha = totalHotkeyAlpha[hotkey][toNetuid];
+        uint256 toNetuidCurrentShares = alpha[hotkey][coldkey][toNetuid];
+        uint256 toNetuidCurrentTotalShares = totalHotkeyShares[hotkey][toNetuid];
+
+        // Update share pool values
+        if (toNetuidCurrentTotalShares == 0) {
+            // First stake to this hotkey
+            totalHotkeyAlpha[hotkey][toNetuid] = outputAlphaAmount;
+            alpha[hotkey][coldkey][toNetuid] = outputAlphaAmount;
+            totalHotkeyShares[hotkey][toNetuid] = outputAlphaAmount;
+        } else {
+            // Calculate new shares
+            uint256 valuePerShare = (toNetuidCurrentTotalAlpha) / toNetuidCurrentTotalShares; // Use 1e18 for precision
+            uint256 newShares = (outputAlphaAmount) / valuePerShare;
+
+            // Update storage
+            totalHotkeyAlpha[hotkey][toNetuid] += outputAlphaAmount;
+            alpha[hotkey][coldkey][toNetuid] += newShares;
+            totalHotkeyShares[hotkey][toNetuid] += newShares;
+        }
+
+        // Update subnet pools
+        subnetTAOs[toNetuid] += taoAmount;
+        subnetAlphas[toNetuid] -= outputAlphaAmount;
+        
     }
 
     function transferStake(bytes32 toColdkey, bytes32 hotkey, uint256 fromNetuid, uint256 toNetuid, uint256 alphaAmount) external {
