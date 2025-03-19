@@ -115,6 +115,8 @@ contract MockStakingPrecompiledPalletV2 {
         require(subnetTAOs[netuid] >= taoAmount, "Insufficient TAO in subnet");
         subnetTAOs[netuid] -= taoAmount;
 
+        // Check if the contract has enough balance to transfer
+        require(address(this).balance >= taoAmount, "Insufficient contract balance to transfer TAO");
         // Transfer TAO back to user
         payable(msg.sender).transfer(taoAmount);
 
