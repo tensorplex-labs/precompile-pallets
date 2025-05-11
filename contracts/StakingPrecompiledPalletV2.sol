@@ -84,8 +84,6 @@ contract MockStakingPrecompiledPalletV2 {
         subnetAlphas[netuid] -= alphaAmount;
     }
 
-
-
     function removeStake(bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external payable {
         bytes32 coldkey = h160toSS58Address[msg.sender];
         if (coldkey == bytes32(0)) {
