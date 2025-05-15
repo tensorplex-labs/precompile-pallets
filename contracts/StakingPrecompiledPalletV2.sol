@@ -44,12 +44,20 @@ contract MockStakingPrecompiledPalletV2 {
         return bytes32(uint256(uint160(addr)));
     }
 
+    function addStakeByColdkey(bytes32 coldkey, bytes32 hotkey, uint256 taoAmount, uint256 netuid) external {
+        _addStake(coldkey, hotkey, taoAmount, netuid);
+    }
+
     function addStake(bytes32 hotkey, uint256 taoAmount, uint256 netuid) external {
-        uint256 alphaAmount = calculateSwapOutput(netuid, taoAmount, true);
         bytes32 coldkey = h160toSS58Address[msg.sender];
+        _addStake(coldkey, hotkey, taoAmount, netuid);
+    }
+
+    function _addStake(bytes32 coldkey, bytes32 hotkey, uint256 taoAmount, uint256 netuid) internal {
         if (coldkey == bytes32(0)) {
             revert("Coldkey not found");
         }
+        uint256 alphaAmount = calculateSwapOutput(netuid, taoAmount, true);
 
         // Add hotkey to coldkey's list if not already registered
         if (!isHotkeyRegistered[coldkey][hotkey]) {
@@ -86,10 +94,17 @@ contract MockStakingPrecompiledPalletV2 {
 
     function removeStake(bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external payable {
         bytes32 coldkey = h160toSS58Address[msg.sender];
+        _removeStake(coldkey, hotkey, netuid, alphaAmount);
+    }
+
+    function removeStakeByColdkey(bytes32 coldkey, bytes32 hotkey, uint256 netuid, uint256 alphaAmount) external payable {
+        _removeStake(coldkey, hotkey, netuid, alphaAmount);
+    }
+
+    function _removeStake(bytes32 coldkey, bytes32 hotkey, uint256 netuid, uint256 alphaAmount) internal {
         if (coldkey == bytes32(0)) {
             revert("Coldkey not found");
         }
-
         // Get current values
         uint256 currentTotalAlpha = totalHotkeyAlpha[hotkey][netuid];
         uint256 currentShares = alpha[hotkey][coldkey][netuid];
